@@ -1,6 +1,71 @@
+require('dotenv').config();
+const CONNECTION_STRING = process.env.CONNECTION_STRING
+console.log(CONNECTION_STRING)
+const Sequelize = require('sequelize');
 
+const sequelize = new Sequelize(CONNECTION_STRING
+    , {
+    dialect: 'postgress',
+    dialectOptions: {
+        ssl: {
+            require: true,
+            rejectUnauthorized: false
+        }
+    }
+}); 
 
 module.exports = {
+    getCountries: (req, res) => {
+        sequelize.query(`SELECT * countries`)
+        .then((dbRes) => {
+            console.log('countries selected!')
+            res.sendStatus(200).send(dbRes[0])
+        }).catch(err => console.log('error selecting countries', err))
+    },
+
+    createCity: (req, res) => {
+        sequelize.query(`INSERT into cities(
+            name,
+            rating, 
+            countryId
+        ) values($1, $2, $3)`, 
+        {
+            bind: [req.body.name, req.rating.name, req.body.countryId],
+            type: Sequelize.QueryTypes.SELECT
+        })
+        .then((dbRes) => {
+            console.log('Cities Created')
+            res.sendStatus(200).send(dbRes[0])
+        }).catch(err => console.log('error creating Cities', err))
+    },
+
+    getCities: (req, res) => {
+        sequelize.query(`SELECT cities.name, cities.rating, 
+        cities.id, countries.id, countries.name 
+        JOIN on cities.country_id = country.country_id
+        WHERE city.id = $1`, 
+        {
+            bind: [res.body.id],
+            type: Sequelize.QueryTypes.SELECT
+        })
+        .then((dbRes) => {
+            console.log('cities added!')
+            res.sendStatus(200).send(dbRes[0])
+        }).catch(err => console.log('error adding cities ', err))
+    },
+    
+    deleteCity: (req, res) => { 
+        sequelize.query(`DELETE city FROM cities WHERE city_id = $1`, 
+        {
+            bind: [req.body.id],
+            type: Sequelize.QueryTypes.SELECT
+        })
+        .then((dbRes) => {
+            console.log('DB seeded!')
+            res.sendStatus(200).send(dbRes[0])
+        }).catch(err => console.log('error deleting cities ', err))
+    },
+
     seed: (req, res) => {
         sequelize.query(`
             drop table if exists cities;
@@ -11,7 +76,12 @@ module.exports = {
                 name varchar
             );
 
-            *****YOUR CODE HERE*****
+            create table cities (
+                city_id serial primary key,
+                name varchar, 
+                rating integer, 
+                country_id integer 
+            )
 
             insert into countries (name)
             values ('Afghanistan'),
